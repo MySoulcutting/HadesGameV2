@@ -2,10 +2,10 @@ package moe.caa.fabric.hadesgame.util
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainCoroutineDispatcher
-import net.minecraft.util.thread.ThreadExecutor
+import net.minecraft.util.thread.ReentrantBlockableEventLoop
 import kotlin.coroutines.CoroutineContext
 
-class ThreadExecutorDispatcher<T : Runnable>(private val threadExecutor: ThreadExecutor<T>) :
+class ThreadExecutorDispatcher<T : Runnable>(private val threadExecutor: ReentrantBlockableEventLoop<T>) :
     MainCoroutineDispatcher() {
     private object ImmediateBukkitDispatcher : MainCoroutineDispatcher() {
         override val immediate: MainCoroutineDispatcher get() = this
@@ -26,7 +26,7 @@ class ThreadExecutorDispatcher<T : Runnable>(private val threadExecutor: ThreadE
         threadExecutor.execute(block)
     }
 
-    override fun isDispatchNeeded(context: CoroutineContext): Boolean = !threadExecutor.isOnThread
+    override fun isDispatchNeeded(context: CoroutineContext): Boolean = !threadExecutor.isSameThread
 
     override fun toString(): String {
         return "ThreadExecutorDispatcher"

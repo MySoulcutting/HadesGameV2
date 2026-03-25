@@ -4,34 +4,35 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.asDeferred
 import moe.caa.fabric.hadesgame.GameCore
-import net.minecraft.block.Blocks
-import net.minecraft.block.FluidBlock
-import net.minecraft.entity.Entity
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.server.world.ChunkTicketType
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.ChunkPos
-import net.minecraft.world.Heightmap
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.level.ChunkPos
+import net.minecraft.world.level.portal.TeleportTransition
+import kotlin.collections.emptySet
 import kotlin.math.max
 
 fun Entity.getLocation() = Location(
-    this.world as ServerWorld,
+    this.level() as ServerLevel,
     this.x, this.y, this.z,
-    this.yaw, this.pitch
+    this.yRot, this.xRot
 )
 
 fun Entity.teleport(location: Location) = teleport(
-    location.world,
-    location.x,
-    location.y,
-    location.z,
-    emptySet(),
-    location.yaw,
-    location.pitch,
-    true
+    TeleportTransition(
+        location.world,
+        location.x,
+        location.y,
+        location.z,
+        emptySet(),
+        location.yaw,
+        location.pitch,
+        true
+    )
 )
+
+fun a(){
+
+}
 
 
 data class Location(
@@ -49,12 +50,12 @@ val randomLocationChunkTicketType: ChunkTicketType = Registry.register(
     ChunkTicketType(300, false, ChunkTicketType.Use.LOADING)
 )
 
-tailrec suspend fun ServerWorld.randomLobbySpawnLocation(): Location {
+tailrec suspend fun ServerLevel.randomLobbySpawnLocation(): Location {
     val posX = (-20000000 + Math.random() * 40000000).toInt()
     val posZ = (-20000000 + Math.random() * 40000000).toInt()
 
     val chunkPos = ChunkPos(posX shr 4, posZ shr 4)
-    chunkManager.addTicket(randomLocationChunkTicketType, chunkPos, 0)
+    chunk.addTicket(randomLocationChunkTicketType, chunkPos, 0)
 
     val worldChunk = GameCore.coroutineScope.async {
         repeat(10) {
