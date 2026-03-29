@@ -49,48 +49,54 @@ val randomLocationChunkTicketType: ChunkTicketType = Registry.register(
     ChunkTicketType(300, false, ChunkTicketType.Use.LOADING)
 )
 
-tailrec suspend fun ServerWorld.randomLobbySpawnLocation(): Location {
-    val posX = (-20000000 + Math.random() * 40000000).toInt()
-    val posZ = (-20000000 + Math.random() * 40000000).toInt()
+suspend fun ServerWorld.randomLobbySpawnLocation(): Location {
+    while (true) {
+        val posX = (-20000000 + Math.random() * 40000000).toInt()
+        val posZ = (-20000000 + Math.random() * 40000000).toInt()
 
-    val chunkPos = ChunkPos(posX shr 4, posZ shr 4)
-    chunkManager.addTicket(randomLocationChunkTicketType, chunkPos, 0)
+        val chunkPos = ChunkPos(posX shr 4, posZ shr 4)
+        chunkManager.addTicket(randomLocationChunkTicketType, chunkPos, 0)
 
-    val worldChunk = GameCore.coroutineScope.async {
-        repeat(10) {
-            val chunk = chunkManager.chunkLoadingManager
-                .getCurrentChunkHolder(chunkPos.toLong())
-                ?.accessibleFuture?.asDeferred()?.await()?.orElse(null)
-            if (chunk != null) return@async chunk
-            delay(50)
+        try {
+            val worldChunk = GameCore.coroutineScope.async {
+                repeat(10) {
+                    val chunk = chunkManager.chunkLoadingManager
+                        .getCurrentChunkHolder(chunkPos.toLong())
+                        ?.accessibleFuture?.asDeferred()?.await()?.orElse(null)
+                    if (chunk != null) return@async chunk
+                    delay(50)
+                }
+                return@async null
+            }.await()
+
+            if (worldChunk == null) {
+                continue
+            }
+
+            val posY = getTopY(Heightmap.Type.WORLD_SURFACE, posX, posZ)
+            val block = getBlockState(BlockPos(posX, posY - 1, posZ))
+
+            if (block.block is FluidBlock) {
+                continue
+            }
+            if (block.block == Blocks.AIR) {
+                continue
+            }
+
+            var platformMaxY = posY
+            for (x in posX - 10..posX + 10) {
+                for (z in posZ - 10..posZ + 10) {
+                    platformMaxY = max(platformMaxY, getTopY(Heightmap.Type.WORLD_SURFACE, x, z))
+                }
+            }
+
+            if (platformMaxY + 40 > height) {
+                continue
+            }
+
+            return Location(this, posX + 0.5, posY + 20.0, posZ + 0.5)
+        } finally {
+            chunkManager.removeTicket(randomLocationChunkTicketType, chunkPos, 0)
         }
-        return@async null
-    }.await()
-    if (worldChunk == null) {
-        chunkManager.removeTicket(randomLocationChunkTicketType, chunkPos, 0)
-        return randomLobbySpawnLocation()
     }
-
-    val posY = getTopY(Heightmap.Type.WORLD_SURFACE, posX, posZ)
-    val block = getBlockState(BlockPos(posX, posY - 1, posZ))
-
-    if (block.block is FluidBlock) {
-        return randomLobbySpawnLocation()
-    }
-    if (block.block == Blocks.AIR) {
-        return randomLobbySpawnLocation()
-    }
-
-    var platformMaxY = 0
-    for (x in -10..10) {
-        for (z in -10..10) {
-            platformMaxY = max(platformMaxY, getTopY(Heightmap.Type.WORLD_SURFACE, x, z))
-        }
-    }
-
-    if (platformMaxY + 40 > height) {
-        return randomLobbySpawnLocation()
-    }
-
-    return Location(this, posX + 0.5, posY + 20.0, posZ + 0.5)
 }

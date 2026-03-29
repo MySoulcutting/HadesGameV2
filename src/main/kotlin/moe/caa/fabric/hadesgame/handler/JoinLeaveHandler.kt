@@ -6,6 +6,7 @@ import moe.caa.fabric.hadesgame.stage.GamingStage
 import moe.caa.fabric.hadesgame.stage.InitStage
 import moe.caa.fabric.hadesgame.stage.WaitReadyStage
 import moe.caa.fabric.hadesgame.stage.WaitReadyStage.preparedPlayers
+import moe.caa.fabric.hadesgame.util.broadcast
 import moe.caa.fabric.hadesgame.util.resetState
 import moe.caa.fabric.hadesgame.util.teleport
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
@@ -46,10 +47,13 @@ object JoinLeaveHandler {
         ServerPlayerEvents.LEAVE.register {
             when (GameCore.currentStage) {
                 GamingStage -> {
-                    it.kill(it.world)
-                    Text.literal("玩家 ").withColor(Color.LIGHT_GRAY.rgb)
-                        .append(Text.literal(it.name.literalString).withColor(Color.WHITE.rgb))
-                        .append(Text.literal(" 畏战自鲨了...").withColor(Color.LIGHT_GRAY.rgb))
+                    if (it.gameMode != GameMode.SPECTATOR) {
+                        it.kill(it.world)
+                        Text.literal("玩家 ").withColor(Color.LIGHT_GRAY.rgb)
+                            .append(Text.literal(it.name.literalString).withColor(Color.WHITE.rgb))
+                            .append(Text.literal(" 畏战自鲨了...").withColor(Color.LIGHT_GRAY.rgb))
+                            .broadcast()
+                    }
                 }
                 else -> {}
             }

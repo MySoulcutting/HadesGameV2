@@ -191,6 +191,6 @@ data object GamingStage : AbstractStage() {
     }
 
     override suspend fun endStage() {
-        AbstractGameEvent::class.sealedSubclasses.map { it.objectInstance!! }.map { it.endEvent() }
+        AbstractGameEvent::class.sealedSubclasses.map { it.objectInstance!! }.forEach { it.endEvent() }
     }
 }
