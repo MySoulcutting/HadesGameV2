@@ -11,37 +11,36 @@ import moe.caa.fabric.hadesgame.util.broadcast
 import moe.caa.fabric.hadesgame.util.resetState
 import moe.caa.fabric.hadesgame.util.teleport
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
-import net.minecraft.entity.LivingEntity
-import net.minecraft.entity.damage.DamageSource
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.world.GameMode
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.level.GameType
 
 object DeathHandler {
     fun setup() {
         ServerLivingEntityEvents.ALLOW_DEATH.register { livingEntity, damageSource, _ ->
-            if (livingEntity !is ServerPlayerEntity) return@register true
+            if (livingEntity !is ServerPlayer) return@register true
             livingEntity as LivingEntityAccessor
 
             livingEntity.resetState()
             when (GameCore.currentStage) {
                 EndStage, GamingStage -> {
-                    livingEntity.changeGameMode(GameMode.SPECTATOR)
-                    livingEntity.invokeDrop(livingEntity.world, damageSource)
+                    livingEntity.setGameMode(GameType.SPECTATOR)
+                    livingEntity.invokeDrop(livingEntity.level(), damageSource)
                 }
 
                 InitStage, WaitReadyStage -> {
-                    livingEntity.changeGameMode(GameMode.ADVENTURE)
+                    livingEntity.setGameMode(GameType.ADVENTURE)
                     livingEntity.teleport(InitStage.lobbySpawnLoc)
                 }
             }
 
-            livingEntity.damageTracker.deathMessage.broadcast()
+            livingEntity.combatTracker.deathMessage.broadcast()
 
             return@register false
         }
 
-        preDeathEvent.register { livingEntity: LivingEntity, damageSource: DamageSource ->
-            if (livingEntity !is ServerPlayerEntity) return@register true
+        preDeathEvent.register { livingEntity: LivingEntity, _ ->
+            if (livingEntity !is ServerPlayer) return@register true
             livingEntity.resetState()
 
             return@register false

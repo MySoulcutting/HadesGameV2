@@ -7,11 +7,10 @@ import moe.caa.fabric.hadesgame.GameCore
 import moe.caa.fabric.hadesgame.util.broadcast
 import moe.caa.fabric.hadesgame.util.broadcastOverlay
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
-import net.minecraft.entity.Entity
-import net.minecraft.entity.LivingEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
 import java.awt.Color
 
 data object ReverseDamage : AbstractGameEvent() {
@@ -22,7 +21,7 @@ data object ReverseDamage : AbstractGameEvent() {
 
     override fun initEvent() {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register { entity, source, amount ->
-            val attacker = source.attacker as? LivingEntity ?: return@register true
+            val attacker = source.entity as? LivingEntity ?: return@register true
 
             if (handlingEntity.contains(entity)) return@register true
             if (handlingEntity.contains(attacker)) return@register true
@@ -30,7 +29,8 @@ data object ReverseDamage : AbstractGameEvent() {
             if (activeJob?.isActive == true) {
                 handlingEntity.add(entity)
                 handlingEntity.add(attacker)
-                attacker.damage((entity.world as ServerWorld), entity.world.damageSources.thorns(attacker), amount)
+                val level = entity.level() as net.minecraft.server.level.ServerLevel
+                attacker.hurtServer(level, level.damageSources().thorns(attacker), amount)
                 handlingEntity.remove(entity)
                 handlingEntity.remove(attacker)
                 return@register false
@@ -43,14 +43,13 @@ data object ReverseDamage : AbstractGameEvent() {
         activeJob?.cancel()
 
         activeJob = GameCore.coroutineScope.launch {
-            // 30 秒
             delay(1000 * 30)
-            Text.literal("反向伤害效果已失效").withColor(Color.RED.rgb).broadcastOverlay()
-            SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP.broadcast(1F, 1F)
+            Component.literal("反向伤害效果已失效").withColor(Color.RED.rgb).broadcastOverlay()
+            SoundEvents.EXPERIENCE_ORB_PICKUP.broadcast(1F, 1F)
         }
-        Text.literal("反向伤害效果已生效").withColor(Color.GREEN.rgb).broadcastOverlay()
+        Component.literal("反向伤害效果已生效").withColor(Color.GREEN.rgb).broadcastOverlay()
 
-        SoundEvents.BLOCK_NOTE_BLOCK_PLING.value().broadcast(1F, 1F)
+        SoundEvents.NOTE_BLOCK_PLING.value().broadcast(1F, 1F)
     }
 
     override suspend fun endEvent() {

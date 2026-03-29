@@ -13,15 +13,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntity.class)
 public abstract class MixinLivingEntity {
-    @WrapOperation(method = "damage", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;onDeath(Lnet/minecraft/entity/damage/DamageSource;)V"))
-    void onRedirectDamage(LivingEntity instance, DamageSource damageSource, Operation<Void> original) {
+
+    @WrapOperation(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;die(Lnet/minecraft/world/damagesource/DamageSource;)V"))
+    private void onRedirectDamage(LivingEntity instance, DamageSource damageSource, Operation<Void> original) {
         if (OnPreDeath.Companion.shouldContinue(instance, damageSource)) {
-            instance.onDeath(damageSource);
+            original.call(instance, damageSource);
         }
     }
 
     @Inject(method = "setLivingEntityFlag", at = @At("HEAD"), cancellable = true)
-    void onSetLivingEntityFlag(int mask, boolean value, CallbackInfo ci) {
+    private void onSetLivingEntityFlag(int mask, boolean value, CallbackInfo ci) {
         if (!OnEntityLivingFlagChange.Companion.shouldContinue((LivingEntity) (Object) this, mask, value)) {
             ci.cancel();
         }

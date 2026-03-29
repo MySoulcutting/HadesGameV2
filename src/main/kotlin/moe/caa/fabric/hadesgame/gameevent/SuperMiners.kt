@@ -7,9 +7,9 @@ import moe.caa.fabric.hadesgame.GameCore
 import moe.caa.fabric.hadesgame.util.broadcast
 import moe.caa.fabric.hadesgame.util.broadcastOverlay
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
-import net.minecraft.util.math.BlockPos
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.network.chat.Component
+import net.minecraft.core.BlockPos
 import java.awt.Color
 
 
@@ -39,7 +39,7 @@ data object SuperMiners : AbstractGameEvent() {
                             if (breakingPositions.add(targetKey)) {
                                 pendingKeys += targetKey
                             }
-                            world.breakBlock(targetPos, true, player)
+                            world.destroyBlock(targetPos, true, player)
                         }
                     }
                 }
@@ -55,11 +55,11 @@ data object SuperMiners : AbstractGameEvent() {
 
         activeJob = GameCore.coroutineScope.launch {
             delay(30_000L)
-            Text.literal("超级矿工已失效").withColor(Color.RED.rgb).broadcastOverlay()
-            SoundEvents.ENTITY_VILLAGER_NO.broadcast(1.0F, 1.0F)
+            Component.literal("超级矿工已失效").withColor(Color.RED.rgb).broadcastOverlay()
+            SoundEvents.VILLAGER_NO.broadcast(1.0F, 1.0F)
         }
-        Text.literal("超级矿工已生效").withColor(Color.GREEN.rgb).broadcastOverlay()
-        SoundEvents.ENTITY_VILLAGER_YES.broadcast(1.0F, 1.0F)
+        Component.literal("超级矿工已生效").withColor(Color.GREEN.rgb).broadcastOverlay()
+        SoundEvents.VILLAGER_YES.broadcast(1.0F, 1.0F)
     }
 
     override suspend fun endEvent() {

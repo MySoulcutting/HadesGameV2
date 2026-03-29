@@ -1,8 +1,8 @@
 package moe.caa.fabric.hadesgame.gameevent
 
 import moe.caa.fabric.hadesgame.util.*
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.network.chat.Component
 import java.awt.Color
 
 data object SwapLocation : AbstractGameEvent() {
@@ -12,11 +12,11 @@ data object SwapLocation : AbstractGameEvent() {
         eventSwap({ it.getLocation() }) { self, source, loc ->
             self.teleport(loc)
 
-            Text.literal("你被传送到 ").withColor(Color.LIGHT_GRAY.rgb)
-                .append(Text.literal(source.name.literalString).withColor(Color.WHITE.rgb)).append(" 的位置")
+            Component.literal("你被传送到 ").withColor(Color.LIGHT_GRAY.rgb)
+                .append(Component.literal(source.name.string).withColor(Color.WHITE.rgb)).append(" 的位置")
                 .sendOverlay(self)
         }
 
-        SoundEvents.ENTITY_FOX_TELEPORT.broadcast(100F, 0F)
+        SoundEvents.FOX_TELEPORT.broadcast(100F, 0F)
     }
 }

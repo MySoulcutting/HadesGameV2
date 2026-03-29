@@ -4,9 +4,9 @@ import moe.caa.fabric.hadesgame.GameCore
 import moe.caa.fabric.hadesgame.gameevent.AbstractGameEvent
 import moe.caa.fabric.hadesgame.handler.ScoreboardHandler
 import moe.caa.fabric.hadesgame.util.*
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
-import net.minecraft.world.GameMode
+import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.level.GameType
 import java.awt.Color
 import java.time.LocalDateTime
 import kotlin.random.Random
@@ -20,7 +20,7 @@ data object GamingStage : AbstractStage() {
     private var tick = 0
     var invincibleCountdown = 0
 
-    var winner: Text? = null
+    var winner: Component? = null
 
     private var codType: CodType = CodType.ALL
     private var eventCountdown = 0
@@ -57,13 +57,13 @@ data object GamingStage : AbstractStage() {
 
         for (player in getPlayers()) {
             player.resetState()
-            player.changeGameMode(GameMode.SURVIVAL)
+            player.setGameMode(GameType.SURVIVAL)
         }
 
-        for (world in GameCore.server.worlds) {
+        for (world in GameCore.server.allLevels) {
             val border = world.worldBorder
             border.size = 1000.0
-            border.interpolateSize(1000.0, 3.0, 1000 * 60 * 10)
+            border.lerpSizeBetween(1000.0, 3.0, 0L, 1000L * 60 * 10)
         }
     }
 
@@ -72,49 +72,47 @@ data object GamingStage : AbstractStage() {
 
         if (invincibleCountdown < 0 && eventCountdown <= 2) {
             if (tick % 2 == 0) {
-                SoundEvents.BLOCK_NOTE_BLOCK_BIT.value().broadcast(1000F, 2.0F)
+                SoundEvents.NOTE_BLOCK_BIT.value().broadcast(1000F, 2.0F)
             }
         }
 
         if (tick % 20 == 0) {
             invincibleCountdown--
 
-
             if (invincibleCountdown > 0) {
                 ScoreboardHandler.updateContents(contents = buildList {
-                    add(Text.literal(DATE_FORMAT.format(LocalDateTime.now())).withColor(Color.LIGHT_GRAY.rgb))
-                    add(Text.literal(" "))
-                    add(Text.literal(" 请做好准备, 无敌  "))
+                    add(Component.literal(DATE_FORMAT.format(LocalDateTime.now())).withColor(Color.LIGHT_GRAY.rgb))
+                    add(Component.literal(" "))
+                    add(Component.literal(" 请做好准备, 无敌  "))
                     add(
-                        Text.literal(" 时间还剩余")
-                            .append(Text.literal(invincibleCountdown.toString()).withColor(Color.RED.rgb)).append("秒.")
+                        Component.literal(" 时间还剩余")
+                            .append(Component.literal(invincibleCountdown.toString()).withColor(Color.RED.rgb)).append("秒.")
                     )
-                    add(Text.literal(" "))
+                    add(Component.literal(" "))
 
                     add(
-                        Text.literal(" 边界: ").append(
-                            Text.literal(GameCore.server.overworld.worldBorder.size.toInt().toString())
+                        Component.literal(" 边界: ").append(
+                            Component.literal(GameCore.server.overworld().worldBorder.size.toInt().toString())
                                 .withColor(Color.RED.rgb)
                         )
                     )
                     add(
-                        Text.literal(" 存活: ")
+                        Component.literal(" 存活: ")
                             .append(
-                                Text.literal(getPlayers().filter { it.gameMode != GameMode.SPECTATOR }.size.toString())
+                                Component.literal(getPlayers().count { it.gameMode() != GameType.SPECTATOR }.toString())
                                     .withColor(Color.RED.rgb)
                             )
                     )
 
-                    add(Text.literal(" "))
-                    add(Text.literal("(╯°□°)╯").withColor(Color.YELLOW.rgb))
+                    add(Component.literal(" "))
+                    add(Component.literal("(╯°□°)╯").withColor(Color.YELLOW.rgb))
                 })
-                Text.literal("无敌时间还剩余 ").withColor(Color.LIGHT_GRAY.rgb)
-                    .append(Text.literal(invincibleCountdown.toString()).withColor(Color.RED.rgb))
-                    .append(Text.literal(" 秒").withColor(Color.LIGHT_GRAY.rgb)).broadcastOverlay()
-
+                Component.literal("无敌时间还剩余 ").withColor(Color.LIGHT_GRAY.rgb)
+                    .append(Component.literal(invincibleCountdown.toString()).withColor(Color.RED.rgb))
+                    .append(Component.literal(" 秒").withColor(Color.LIGHT_GRAY.rgb)).broadcastOverlay()
             } else if (invincibleCountdown == 0) {
-                SoundEvents.GOAT_HORN_SOUNDS[2].value().broadcast(1000F, 1F)
-                Text.literal("鲨了他们!").withColor(Color.RED.rgb).broadcastOverlay()
+                SoundEvents.GOAT_HORN_SOUND_VARIANTS[2].value().broadcast(1000F, 1F)
+                Component.literal("鲨了他们!").withColor(Color.RED.rgb).broadcastOverlay()
                 randomNext()
             } else {
                 eventCountdown--
@@ -122,55 +120,55 @@ data object GamingStage : AbstractStage() {
                     if (Random.nextDouble() < 0.7) {
                         event.callEvent()
                     } else {
-                        Text.literal("FAKE EVENT").withColor(Color.RED.rgb).broadcastOverlay()
-                        SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO.value().broadcast(1000F, 1.5F)
+                        Component.literal("FAKE EVENT").withColor(Color.RED.rgb).broadcastOverlay()
+                        SoundEvents.NOTE_BLOCK_DIDGERIDOO.value().broadcast(1000F, 1.5F)
                     }
                     randomNext()
                 }
                 ScoreboardHandler.updateContents(contents = buildList {
-                    add(Text.literal(DATE_FORMAT.format(LocalDateTime.now())).withColor(Color.LIGHT_GRAY.rgb))
-                    add(Text.literal(" "))
-                    add(Text.literal(" 下一事件:"))
+                    add(Component.literal(DATE_FORMAT.format(LocalDateTime.now())).withColor(Color.LIGHT_GRAY.rgb))
+                    add(Component.literal(" "))
+                    add(Component.literal(" 下一事件:"))
 
                     fun Int.countdownFormat() = String.format("%02d:%02d", this / 60, this % 60)
 
                     if (eventCountdown > 10) {
                         add(
-                            Text.literal("   ")
+                            Component.literal("   ")
                                 .append(
-                                    Text.literal(if (codType.hideEventName) "§kCaaMoe" else event.eventName)
+                                    Component.literal(if (codType.hideEventName) "§kCaaMoe" else event.eventName)
                                         .withColor(Color.GREEN.rgb)
                                 )
-                                .append(Text.literal("  ").withColor(Color.GREEN.rgb))
+                                .append(Component.literal("  ").withColor(Color.GREEN.rgb))
                                 .append(
-                                    Text.literal(if (codType.hideCountdown) "§k00:10" else eventCountdown.countdownFormat())
+                                    Component.literal(if (codType.hideCountdown) "§k00:10" else eventCountdown.countdownFormat())
                                         .withColor(Color.LIGHT_GRAY.rgb)
                                 )
                         )
                     } else {
                         add(
-                            Text.literal("   ")
-                                .append(Text.literal(event.eventName).withColor(Color.GREEN.rgb))
-                                .append(Text.literal("  ").withColor(Color.GREEN.rgb))
-                                .append(Text.literal(eventCountdown.countdownFormat()).withColor(Color.LIGHT_GRAY.rgb))
+                            Component.literal("   ")
+                                .append(Component.literal(event.eventName).withColor(Color.GREEN.rgb))
+                                .append(Component.literal("  ").withColor(Color.GREEN.rgb))
+                                .append(Component.literal(eventCountdown.countdownFormat()).withColor(Color.LIGHT_GRAY.rgb))
                         )
                     }
-                    add(Text.literal(" "))
+                    add(Component.literal(" "))
                     add(
-                        Text.literal(" 边界: ").append(
-                            Text.literal(GameCore.server.overworld.worldBorder.size.toInt().toString())
+                        Component.literal(" 边界: ").append(
+                            Component.literal(GameCore.server.overworld().worldBorder.size.toInt().toString())
                                 .withColor(Color.RED.rgb)
                         )
                     )
                     add(
-                        Text.literal(" 存活: ")
+                        Component.literal(" 存活: ")
                             .append(
-                                Text.literal(getPlayers().filter { it.gameMode != GameMode.SPECTATOR }.size.toString())
+                                Component.literal(getPlayers().count { it.gameMode() != GameType.SPECTATOR }.toString())
                                     .withColor(Color.RED.rgb)
                             )
                     )
-                    add(Text.literal(" "))
-                    add(Text.literal("(╯°□°)╯").withColor(Color.YELLOW.rgb))
+                    add(Component.literal(" "))
+                    add(Component.literal("(╯°□°)╯").withColor(Color.YELLOW.rgb))
                 })
             }
         }
@@ -178,7 +176,7 @@ data object GamingStage : AbstractStage() {
 
     override suspend fun shouldEndStage(): Boolean {
         if (tick % 20 == 0) {
-            val playerEntities = getPlayers().filter { it.gameMode != GameMode.SPECTATOR }
+            val playerEntities = getPlayers().filter { it.gameMode() != GameType.SPECTATOR }
             if (playerEntities.size <= 1) {
                 if (playerEntities.isNotEmpty()) {
                     winner = playerEntities.first().name

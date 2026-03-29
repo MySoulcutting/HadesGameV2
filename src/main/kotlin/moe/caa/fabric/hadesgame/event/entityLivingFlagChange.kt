@@ -2,7 +2,7 @@ package moe.caa.fabric.hadesgame.event
 
 import net.fabricmc.fabric.api.event.Event
 import net.fabricmc.fabric.api.event.EventFactory
-import net.minecraft.entity.LivingEntity
+import net.minecraft.world.entity.LivingEntity
 
 
 val entityLivingFlagChangeEvent: Event<OnEntityLivingFlagChange> = EventFactory.createArrayBacked(

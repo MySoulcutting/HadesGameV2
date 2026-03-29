@@ -8,10 +8,10 @@ import moe.caa.fabric.hadesgame.util.broadcast
 import moe.caa.fabric.hadesgame.util.broadcastOverlay
 import moe.caa.fabric.hadesgame.util.getActivePlayers
 import moe.caa.fabric.hadesgame.util.getPlayers
-import net.minecraft.entity.effect.StatusEffectInstance
-import net.minecraft.entity.effect.StatusEffects
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
+import net.minecraft.world.effect.MobEffectInstance
+import net.minecraft.world.effect.MobEffects
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.network.chat.Component
 import java.awt.Color
 
 data object DarknessDescend : AbstractGameEvent() {
@@ -27,13 +27,13 @@ data object DarknessDescend : AbstractGameEvent() {
         activeJob = GameCore.coroutineScope.launch {
             delay(30_000L)
             clearEffects()
-            Text.literal("黑暗降临已结束").withColor(Color.RED.rgb).broadcastOverlay()
-            SoundEvents.ENTITY_VILLAGER_NO.broadcast(1.0F, 1.0F)
+            Component.literal("黑暗降临已结束").withColor(Color.RED.rgb).broadcastOverlay()
+            SoundEvents.VILLAGER_NO.broadcast(1.0F, 1.0F)
         }
 
-        Text.literal("黑暗降临已生效").withColor(Color.GREEN.rgb).broadcast()
-        Text.literal("黑暗吞噬了所有人").withColor(Color.DARK_GRAY.rgb).broadcastOverlay()
-        SoundEvents.BLOCK_BEACON_ACTIVATE.broadcast(1.0F, 0.7F)
+        Component.literal("黑暗降临已生效").withColor(Color.GREEN.rgb).broadcast()
+        Component.literal("黑暗吞噬了所有人").withColor(Color.DARK_GRAY.rgb).broadcastOverlay()
+        SoundEvents.BEACON_ACTIVATE.broadcast(1.0F, 0.7F)
     }
 
     override suspend fun endEvent() {
@@ -43,15 +43,15 @@ data object DarknessDescend : AbstractGameEvent() {
 
     private fun applyEffects(durationTicks: Int) {
         for (player in getActivePlayers()) {
-            player.addStatusEffect(StatusEffectInstance(StatusEffects.BLINDNESS, durationTicks, 0, false, false, true))
-            player.addStatusEffect(StatusEffectInstance(StatusEffects.DARKNESS, durationTicks, 0, false, false, true))
+            player.addEffect(MobEffectInstance(MobEffects.BLINDNESS, durationTicks, 0, false, false, true))
+            player.addEffect(MobEffectInstance(MobEffects.DARKNESS, durationTicks, 0, false, false, true))
         }
     }
 
     private fun clearEffects() {
         for (player in getPlayers()) {
-            player.removeStatusEffect(StatusEffects.BLINDNESS)
-            player.removeStatusEffect(StatusEffects.DARKNESS)
+            player.removeEffect(MobEffects.BLINDNESS)
+            player.removeEffect(MobEffects.DARKNESS)
         }
     }
 }

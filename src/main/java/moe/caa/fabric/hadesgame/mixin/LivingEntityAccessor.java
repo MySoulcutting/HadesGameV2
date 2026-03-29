@@ -11,11 +11,11 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 public interface LivingEntityAccessor extends EntityAccessor {
 
     @Invoker("dropAllDeathLoot")
-    void invokeDropAllDeathLoot(ServerLevel world, DamageSource damageSource);
+    void invokeDrop(ServerLevel world, DamageSource damageSource);
 
     @Invoker("setLivingEntityFlag")
     void invokeSetLivingFlag(int mask, boolean value);
 
-    @Accessor("lastDamageTaken")
+    @Accessor("lastHurt")
     float getLastDamageTaken();
 }

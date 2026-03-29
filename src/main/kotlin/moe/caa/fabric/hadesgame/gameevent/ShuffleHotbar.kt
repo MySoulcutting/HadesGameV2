@@ -5,8 +5,8 @@ import moe.caa.fabric.hadesgame.util.copyHotbar
 import moe.caa.fabric.hadesgame.util.getActivePlayers
 import moe.caa.fabric.hadesgame.util.sendOverlay
 import moe.caa.fabric.hadesgame.util.setHotbar
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.network.chat.Component
 import java.awt.Color
 
 data object ShuffleHotbar : AbstractGameEvent() {
@@ -18,10 +18,10 @@ data object ShuffleHotbar : AbstractGameEvent() {
 
         for (player in players) {
             player.setHotbar(player.copyHotbar().shuffled())
-            Text.literal("你的快捷栏已被打乱").withColor(Color.LIGHT_GRAY.rgb).sendOverlay(player)
+            Component.literal("你的快捷栏已被打乱").withColor(Color.LIGHT_GRAY.rgb).sendOverlay(player)
         }
 
-        Text.literal("热栏洗牌已完成").withColor(Color.GREEN.rgb).broadcast()
-        SoundEvents.ENTITY_FOX_TELEPORT.broadcast(100F, 0F)
+        Component.literal("热栏洗牌已完成").withColor(Color.GREEN.rgb).broadcast()
+        SoundEvents.FOX_TELEPORT.broadcast(100F, 0F)
     }
 }

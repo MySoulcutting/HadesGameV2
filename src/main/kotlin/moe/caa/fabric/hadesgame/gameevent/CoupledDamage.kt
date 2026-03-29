@@ -11,11 +11,10 @@ import moe.caa.fabric.hadesgame.util.broadcastOverlay
 import moe.caa.fabric.hadesgame.util.getActivePlayers
 import moe.caa.fabric.hadesgame.util.sendOverlay
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
-import net.minecraft.world.GameMode
+import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.level.GameType
 import java.awt.Color
 import java.util.UUID
 
@@ -28,7 +27,7 @@ data object CoupledDamage : AbstractGameEvent() {
 
     override fun initEvent() {
         ServerLivingEntityEvents.AFTER_DAMAGE.register { livingEntity, _, _, damageTaken, blocked ->
-            val player = livingEntity as? ServerPlayerEntity ?: return@register
+            val player = livingEntity as? ServerPlayer ?: return@register
             if (blocked) return@register
 
             val actualDamage = (player as LivingEntityAccessor).lastDamageTaken.coerceAtLeast(damageTaken)
@@ -36,7 +35,7 @@ data object CoupledDamage : AbstractGameEvent() {
         }
 
         preDeathEvent.register { livingEntity, _ ->
-            val player = livingEntity as? ServerPlayerEntity ?: return@register false
+            val player = livingEntity as? ServerPlayer ?: return@register false
             val actualDamage = (player as LivingEntityAccessor).lastDamageTaken.coerceAtLeast(1.0f)
             relayDamage(player, actualDamage)
             return@register false
@@ -55,17 +54,17 @@ data object CoupledDamage : AbstractGameEvent() {
             val second = group.getOrNull(1)
 
             if (second == null) {
-                Text.literal("本轮连坐你轮空了").withColor(Color.LIGHT_GRAY.rgb).sendOverlay(first)
+                Component.literal("本轮连坐你轮空了").withColor(Color.LIGHT_GRAY.rgb).sendOverlay(first)
                 return@forEach
             }
 
             partnerMap[first.uuid] = second.uuid
             partnerMap[second.uuid] = first.uuid
 
-            Text.literal("本轮连坐搭档: ").withColor(Color.LIGHT_GRAY.rgb)
+            Component.literal("本轮连坐搭档: ").withColor(Color.LIGHT_GRAY.rgb)
                 .append(second.name.copy().withColor(Color.WHITE.rgb))
                 .sendOverlay(first)
-            Text.literal("本轮连坐搭档: ").withColor(Color.LIGHT_GRAY.rgb)
+            Component.literal("本轮连坐搭档: ").withColor(Color.LIGHT_GRAY.rgb)
                 .append(first.name.copy().withColor(Color.WHITE.rgb))
                 .sendOverlay(second)
         }
@@ -73,12 +72,12 @@ data object CoupledDamage : AbstractGameEvent() {
         activeJob = GameCore.coroutineScope.launch {
             delay(30_000L)
             clearPairs()
-            Text.literal("连坐已结束").withColor(Color.RED.rgb).broadcastOverlay()
-            SoundEvents.ENTITY_VILLAGER_NO.broadcast(1.0F, 1.0F)
+            Component.literal("连坐已结束").withColor(Color.RED.rgb).broadcastOverlay()
+            SoundEvents.VILLAGER_NO.broadcast(1.0F, 1.0F)
         }
 
-        Text.literal("连坐已开始, 受伤会牵连你的搭档").withColor(Color.GREEN.rgb).broadcast()
-        SoundEvents.BLOCK_BEACON_ACTIVATE.broadcast(1.0F, 0.6F)
+        Component.literal("连坐已开始, 受伤会牵连你的搭档").withColor(Color.GREEN.rgb).broadcast()
+        SoundEvents.BEACON_ACTIVATE.broadcast(1.0F, 0.6F)
     }
 
     override suspend fun endEvent() {
@@ -86,21 +85,22 @@ data object CoupledDamage : AbstractGameEvent() {
         clearPairs()
     }
 
-    private fun relayDamage(player: ServerPlayerEntity, amount: Float) {
+    private fun relayDamage(player: ServerPlayer, amount: Float) {
         if (activeJob?.isActive != true) return
-        if (player.interactionManager.gameMode == GameMode.SPECTATOR) return
+        if (player.gameMode() == GameType.SPECTATOR) return
         if (player.uuid in relayingPlayers) return
         if (amount <= 0.0f) return
 
         val partnerUuid = partnerMap[player.uuid] ?: return
-        val partner = GameCore.server.playerManager.getPlayer(partnerUuid) ?: return
-        if (partner.interactionManager.gameMode == GameMode.SPECTATOR) return
+        val partner = GameCore.server.playerList.getPlayer(partnerUuid) ?: return
+        if (partner.gameMode() == GameType.SPECTATOR) return
         if (partner.uuid in relayingPlayers) return
 
         relayingPlayers += player.uuid
         relayingPlayers += partner.uuid
         try {
-            partner.damage(partner.world as ServerWorld, partner.world.damageSources.generic(), amount)
+            val level = partner.level()
+            partner.hurtServer(level, level.damageSources().generic(), amount)
         } finally {
             relayingPlayers.remove(player.uuid)
             relayingPlayers.remove(partner.uuid)

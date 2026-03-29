@@ -1,10 +1,10 @@
 package moe.caa.fabric.hadesgame.util
 
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun <DATA> eventSwap(
-    attributeDataGetter: (ServerPlayerEntity) -> DATA,
-    attributeSetter: (ServerPlayerEntity, ServerPlayerEntity, DATA) -> Unit,
+    attributeDataGetter: (ServerPlayer) -> DATA,
+    attributeSetter: (ServerPlayer, ServerPlayer, DATA) -> Unit,
 ) {
     val targets = getActivePlayers()
         .toMutableList()

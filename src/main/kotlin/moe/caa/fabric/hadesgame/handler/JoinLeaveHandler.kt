@@ -10,20 +10,19 @@ import moe.caa.fabric.hadesgame.util.broadcast
 import moe.caa.fabric.hadesgame.util.resetState
 import moe.caa.fabric.hadesgame.util.teleport
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
-import net.minecraft.entity.Entity
-import net.minecraft.text.Text
-import net.minecraft.world.GameMode
+import net.minecraft.network.chat.Component
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.level.GameType
 import java.awt.Color
 
 object JoinLeaveHandler {
     fun setup() {
-
         ServerPlayerEvents.JOIN.register {
             preparedPlayers.remove(it.uuid)
 
             var player = it
-            if (player.isDead) {
-                player = GameCore.server.playerManager.respawnPlayer(
+            if (!player.isAlive) {
+                player = GameCore.server.playerList.respawn(
                     player,
                     true,
                     Entity.RemovalReason.CHANGED_DIMENSION
@@ -35,11 +34,11 @@ object JoinLeaveHandler {
 
             when (GameCore.currentStage) {
                 EndStage, GamingStage -> {
-                    player.changeGameMode(GameMode.SPECTATOR)
+                    player.setGameMode(GameType.SPECTATOR)
                 }
 
                 InitStage, WaitReadyStage -> {
-                    player.changeGameMode(GameMode.ADVENTURE)
+                    player.setGameMode(GameType.ADVENTURE)
                 }
             }
         }
@@ -47,14 +46,15 @@ object JoinLeaveHandler {
         ServerPlayerEvents.LEAVE.register {
             when (GameCore.currentStage) {
                 GamingStage -> {
-                    if (it.gameMode != GameMode.SPECTATOR) {
-                        it.kill(it.world)
-                        Text.literal("玩家 ").withColor(Color.LIGHT_GRAY.rgb)
-                            .append(Text.literal(it.name.literalString).withColor(Color.WHITE.rgb))
-                            .append(Text.literal(" 畏战自鲨了...").withColor(Color.LIGHT_GRAY.rgb))
+                    if (it.gameMode() != GameType.SPECTATOR) {
+                        it.kill(it.level())
+                        Component.literal("玩家 ").withColor(Color.LIGHT_GRAY.rgb)
+                            .append(it.name.copy().withColor(Color.WHITE.rgb))
+                            .append(Component.literal(" 畏战自鲨了...").withColor(Color.LIGHT_GRAY.rgb))
                             .broadcast()
                     }
                 }
+
                 else -> {}
             }
         }

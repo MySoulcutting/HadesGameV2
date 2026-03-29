@@ -6,12 +6,12 @@ import moe.caa.fabric.hadesgame.stage.GamingStage
 import moe.caa.fabric.hadesgame.stage.InitStage
 import moe.caa.fabric.hadesgame.stage.WaitReadyStage
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 object AllowDamageHandler {
     fun setup() {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register { livingEntity, _, _ ->
-            if (livingEntity !is ServerPlayerEntity) return@register true
+            if (livingEntity !is ServerPlayer) return@register true
             return@register when (GameCore.currentStage) {
                 EndStage -> false
                 GamingStage -> GamingStage.invincibleCountdown <= 0
