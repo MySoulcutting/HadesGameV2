@@ -1,28 +1,28 @@
 package moe.caa.fabric.hadesgame.util
 
 import moe.caa.fabric.hadesgame.GameCore
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.sound.SoundEvent
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvent
 
-fun Text.broadcast() {
-    GameCore.server.sendMessage(this)
+fun Component.broadcast() {
+    GameCore.server.sendSystemMessage(this)
     for (player in getPlayers()) {
-        player.sendMessage(this, false)
+        player.sendSystemMessage(this, false)
     }
 }
 
-fun Text.broadcastOverlay() {
+fun Component.broadcastOverlay() {
     for (player in getPlayers()) {
-        player.sendMessage(this, true)
+        player.sendOverlayMessage(this)
     }
 }
 
-fun Text.sendOverlay(spe: ServerPlayerEntity) {
-    spe.sendMessage(this, true)
+fun Component.sendOverlay(spe: ServerPlayer) {
+    spe.sendOverlayMessage(this)
 }
 
-fun SoundEvent.playSound(spe: ServerPlayerEntity, volume: Float = 1.0F, pitch: Float = spe.pitch) {
+fun SoundEvent.playSound(spe: ServerPlayer, volume: Float = 1.0F, pitch: Float = spe.xRot) {
     spe.playSound(this, volume, pitch)
 }
 

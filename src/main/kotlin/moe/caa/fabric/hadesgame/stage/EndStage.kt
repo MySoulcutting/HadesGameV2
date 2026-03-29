@@ -5,17 +5,16 @@ import moe.caa.fabric.hadesgame.handler.ScoreboardHandler
 import moe.caa.fabric.hadesgame.util.DATE_FORMAT
 import moe.caa.fabric.hadesgame.util.broadcast
 import moe.caa.fabric.hadesgame.util.broadcastOverlay
-import net.minecraft.entity.Entity
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.entity.Entity
 import java.awt.Color
 import java.time.LocalDateTime
 
 data object EndStage : AbstractStage() {
     override val stageName = "结束"
     override val nextStage = InitStage
-
 
     private var tick = 0
     private var countdown = 0
@@ -25,23 +24,23 @@ data object EndStage : AbstractStage() {
         countdown = 15
 
         runCatching {
-            for (world in GameCore.server.worlds) {
-                for (entity in world.iterateEntities()) {
-                    if (entity !is ServerPlayerEntity) {
-                        entity?.remove(Entity.RemovalReason.KILLED)
+            for (world in GameCore.server.allLevels) {
+                for (entity in world.allEntities) {
+                    if (entity !is ServerPlayer) {
+                        entity.remove(Entity.RemovalReason.KILLED)
                     }
                 }
             }
         }
 
-        SoundEvents.GOAT_HORN_SOUNDS[1].value().broadcast(1000F, 1F)
+        SoundEvents.GOAT_HORN_SOUND_VARIANTS[1].value().broadcast(1000F, 1F)
 
         val winner = GamingStage.winner
         if (winner == null) {
-            Text.literal("游戏结束, 这局没有人获胜").withColor(Color.RED.rgb).broadcast()
+            Component.literal("游戏结束, 这局没有人获胜").withColor(Color.RED.rgb).broadcast()
         } else {
-            Text.literal("游戏结束, 最后的赢家是: ").withColor(Color.RED.rgb)
-                .append(Text.literal(winner.literalString).withColor(Color.WHITE.rgb)).broadcast()
+            Component.literal("游戏结束, 最后的赢家是: ").withColor(Color.RED.rgb)
+                .append(Component.literal(winner.string).withColor(Color.WHITE.rgb)).broadcast()
         }
     }
 
@@ -50,25 +49,25 @@ data object EndStage : AbstractStage() {
             countdown--
 
             ScoreboardHandler.updateContents(contents = buildList {
-                add(Text.literal(DATE_FORMAT.format(LocalDateTime.now())).withColor(Color.LIGHT_GRAY.rgb))
-                add(Text.literal(" "))
-                add(Text.literal("   游戏结束    "))
+                add(Component.literal(DATE_FORMAT.format(LocalDateTime.now())).withColor(Color.LIGHT_GRAY.rgb))
+                add(Component.literal(" "))
+                add(Component.literal("   游戏结束    "))
 
                 val winner = GamingStage.winner
                 if (winner == null) {
-                    add(Text.literal(" 这局没有人获胜 "))
+                    add(Component.literal(" 这局没有人获胜 "))
                 } else {
-                    add(Text.literal(" 这局的赢家是 "))
-                    add(Text.literal("  " + winner.literalString + " ").withColor(Color.RED.rgb))
+                    add(Component.literal(" 这局的赢家是 "))
+                    add(Component.literal("  " + winner.string + " ").withColor(Color.RED.rgb))
                 }
 
-                add(Text.literal(" "))
-                add(Text.literal("(╯°□°)╯").withColor(Color.YELLOW.rgb))
+                add(Component.literal(" "))
+                add(Component.literal("(╯°□°)╯").withColor(Color.YELLOW.rgb))
             })
 
-            Text.literal("将在 ").withColor(Color.LIGHT_GRAY.rgb)
-                .append(Text.literal(countdown.toString()).withColor(Color.RED.rgb))
-                .append(Text.literal(" 秒后随机下一轮游戏!").withColor(Color.LIGHT_GRAY.rgb)).broadcastOverlay()
+            Component.literal("将在 ").withColor(Color.LIGHT_GRAY.rgb)
+                .append(Component.literal(countdown.toString()).withColor(Color.RED.rgb))
+                .append(Component.literal(" 秒后随机下一轮游戏!").withColor(Color.LIGHT_GRAY.rgb)).broadcastOverlay()
         }
     }
 

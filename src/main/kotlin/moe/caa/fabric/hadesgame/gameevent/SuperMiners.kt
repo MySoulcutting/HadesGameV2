@@ -7,9 +7,9 @@ import moe.caa.fabric.hadesgame.GameCore
 import moe.caa.fabric.hadesgame.util.broadcast
 import moe.caa.fabric.hadesgame.util.broadcastOverlay
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
-import net.minecraft.util.math.BlockPos
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.network.chat.Component
+import net.minecraft.core.BlockPos
 import java.awt.Color
 
 
@@ -17,19 +17,35 @@ data object SuperMiners : AbstractGameEvent() {
     override val eventName = "超级矿工"
 
     private var activeJob: Job? = null
+    private val breakingPositions = mutableSetOf<Long>()
 
     override fun initEvent() {
+        PlayerBlockBreakEvents.AFTER.register { world, player, pos, _, _ ->
+            if (activeJob?.isActive != true) return@register
 
-        PlayerBlockBreakEvents.AFTER.register { world, player, pos, state, blockEntity ->
-            if (activeJob?.isActive == true) {
-                val speech = 2
-                for (y in pos.y - speech..<pos.y + speech) {
-                    for (x in pos.x - speech..<pos.x + speech) {
-                        for (z in pos.z - speech..<pos.z + speech) {
-                            world.breakBlock(BlockPos(x, y, z), true)
+            val rootPosKey = pos.asLong()
+            if (!breakingPositions.add(rootPosKey)) return@register
+
+            val pendingKeys = mutableListOf<Long>()
+            try {
+                val radius = 2
+                for (y in pos.y - radius..pos.y + radius) {
+                    for (x in pos.x - radius..pos.x + radius) {
+                        for (z in pos.z - radius..pos.z + radius) {
+                            if (x == pos.x && y == pos.y && z == pos.z) continue
+
+                            val targetPos = BlockPos(x, y, z)
+                            val targetKey = targetPos.asLong()
+                            if (breakingPositions.add(targetKey)) {
+                                pendingKeys += targetKey
+                            }
+                            world.destroyBlock(targetPos, true, player)
                         }
                     }
                 }
+            } finally {
+                breakingPositions.remove(rootPosKey)
+                pendingKeys.forEach(breakingPositions::remove)
             }
         }
     }
@@ -38,17 +54,16 @@ data object SuperMiners : AbstractGameEvent() {
         activeJob?.cancel()
 
         activeJob = GameCore.coroutineScope.launch {
-            // 30 秒
-            delay(1000 * 30)
-            Text.literal("超级矿工已失效").withColor(Color.RED.rgb).broadcastOverlay()
-            SoundEvents.ENTITY_VILLAGER_NO.broadcast(1.0F, 1.0F)
+            delay(30_000L)
+            Component.literal("超级矿工已失效").withColor(Color.RED.rgb).broadcastOverlay()
+            SoundEvents.VILLAGER_NO.broadcast(1.0F, 1.0F)
         }
-        Text.literal("超级矿工已生效").withColor(Color.GREEN.rgb).broadcastOverlay()
-        SoundEvents.ENTITY_VILLAGER_YES.broadcast(1.0F, 1.0F)
-
+        Component.literal("超级矿工已生效").withColor(Color.GREEN.rgb).broadcastOverlay()
+        SoundEvents.VILLAGER_YES.broadcast(1.0F, 1.0F)
     }
 
     override suspend fun endEvent() {
+        breakingPositions.clear()
         activeJob?.cancel()
     }
 }

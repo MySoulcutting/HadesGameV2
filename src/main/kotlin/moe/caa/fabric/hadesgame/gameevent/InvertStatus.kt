@@ -4,8 +4,8 @@ package moe.caa.fabric.hadesgame.gameevent
 //import moe.caa.fabric.hadesgame.util.broadcast
 //import moe.caa.fabric.hadesgame.util.getPlayers
 //import moe.caa.fabric.hadesgame.util.sendOverlay
-//import net.minecraft.sound.SoundEvents
-//import net.minecraft.text.Text
+//import net.minecraft.sounds.SoundEvents
+//import net.minecraft.network.chat.Component
 //import java.awt.Color
 //import kotlin.math.max
 //
@@ -18,17 +18,17 @@ package moe.caa.fabric.hadesgame.gameevent
 //
 //        for (player in getPlayers()) {
 //            val oldHealth = player.health
-//            val oldFoodLevel = player.hungerManager.foodLevel
+//            val oldFoodLevel = player.foodData.foodLevel
 //
 //            // 反转
 //            val newHealth = max(minHealth, player.maxHealth - oldHealth)
 //            val newFoodLevel = max(minFoodLevel, 20 - oldFoodLevel)
 //
 //            player.health = newHealth
-//            player.hungerManager.foodLevel = newFoodLevel
+//            player.foodData.foodLevel = newFoodLevel
 //
-//            Text.literal("你的血量与饥饿值已反转").withColor(Color.LIGHT_GRAY.rgb).sendOverlay(player)
+//            Component.literal("你的血量与饥饿值已反转").withColor(Color.LIGHT_GRAY.rgb).sendOverlay(player)
 //        }
-//        SoundEvents.ENTITY_FOX_TELEPORT.broadcast(100F, 0F)
+//        SoundEvents.FOX_TELEPORT.broadcast(100F, 0F)
 //    }
 //}

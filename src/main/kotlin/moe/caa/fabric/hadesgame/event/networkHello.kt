@@ -2,14 +2,14 @@ package moe.caa.fabric.hadesgame.event
 
 import net.fabricmc.fabric.api.event.Event
 import net.fabricmc.fabric.api.event.EventFactory
-import net.minecraft.server.network.ServerLoginNetworkHandler
-import net.minecraft.text.Text
+import net.minecraft.server.network.ServerLoginPacketListenerImpl
+import net.minecraft.network.chat.Component
 
 
 val networkHelloEvent: Event<OnHello> = EventFactory.createArrayBacked(
     OnHello::class.java
 ) { callbacks ->
-    OnHello { handler: ServerLoginNetworkHandler ->
+    OnHello { handler: ServerLoginPacketListenerImpl ->
         for (callback in callbacks) {
             when (val result = callback.onHello(handler)) {
                 is OnHello.Result.ALLOWED -> {}
@@ -21,10 +21,10 @@ val networkHelloEvent: Event<OnHello> = EventFactory.createArrayBacked(
 }
 
 fun interface OnHello {
-    fun onHello(handler: ServerLoginNetworkHandler): Result
+    fun onHello(handler: ServerLoginPacketListenerImpl): Result
 
     companion object {
-        fun shouldCancel(handler: ServerLoginNetworkHandler): Boolean {
+        fun shouldCancel(handler: ServerLoginPacketListenerImpl): Boolean {
             val result = networkHelloEvent.invoker().onHello(handler)
             if (result is Result.KICK) {
                 handler.disconnect(result.reason)
@@ -36,6 +36,6 @@ fun interface OnHello {
 
     sealed interface Result {
         data object ALLOWED : Result
-        class KICK(val reason: Text) : Result
+        class KICK(val reason: Component) : Result
     }
 }

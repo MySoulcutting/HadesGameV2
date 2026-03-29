@@ -1,16 +1,16 @@
 package moe.caa.fabric.hadesgame.util
 
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.world.GameMode
+import net.minecraft.server.level.ServerPlayer
 
 fun <DATA> eventSwap(
-    attributeDataGetter: (ServerPlayerEntity) -> DATA,
-    attributeSetter: (ServerPlayerEntity, ServerPlayerEntity, DATA) -> Unit,
+    attributeDataGetter: (ServerPlayer) -> DATA,
+    attributeSetter: (ServerPlayer, ServerPlayer, DATA) -> Unit,
 ) {
-    val targets = getPlayers()
-        .filter { it.interactionManager.gameMode != GameMode.SPECTATOR }
+    val targets = getActivePlayers()
         .toMutableList()
         .apply { shuffle() }
+
+    if (targets.isEmpty()) return
 
     val sources = targets.map { it to attributeDataGetter.invoke(it) }.toMutableList().apply {
         add(removeFirst())

@@ -2,13 +2,13 @@ package moe.caa.fabric.hadesgame.event
 
 import net.fabricmc.fabric.api.event.Event
 import net.fabricmc.fabric.api.event.EventFactory
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 
 val sneakStateChangeEvent: Event<OnSneakStateChange> = EventFactory.createArrayBacked(
     OnSneakStateChange::class.java
 ) { callbacks ->
-    OnSneakStateChange { player: ServerPlayerEntity, newSneakingState: Boolean ->
+    OnSneakStateChange { player: ServerPlayer, newSneakingState: Boolean ->
         for (callback in callbacks) {
             callback.onSneakStateChange(player, newSneakingState)
         }
@@ -16,10 +16,10 @@ val sneakStateChangeEvent: Event<OnSneakStateChange> = EventFactory.createArrayB
 }
 
 fun interface OnSneakStateChange {
-    fun onSneakStateChange(player: ServerPlayerEntity, newSneakingState: Boolean)
+    fun onSneakStateChange(player: ServerPlayer, newSneakingState: Boolean)
 
     companion object {
-        fun trigger(player: ServerPlayerEntity, newSneakingState: Boolean) {
+        fun trigger(player: ServerPlayer, newSneakingState: Boolean) {
             sneakStateChangeEvent.invoker().onSneakStateChange(player, newSneakingState)
         }
     }

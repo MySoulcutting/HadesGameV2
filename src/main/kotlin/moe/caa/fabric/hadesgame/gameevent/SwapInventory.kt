@@ -3,10 +3,11 @@ package moe.caa.fabric.hadesgame.gameevent
 import moe.caa.fabric.hadesgame.util.broadcast
 import moe.caa.fabric.hadesgame.util.eventSwap
 import moe.caa.fabric.hadesgame.util.sendOverlay
-import net.minecraft.item.ItemStack
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.Text
+import moe.caa.fabric.hadesgame.util.syncInventory
+import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.item.ItemStack
 import java.awt.Color
 
 data object SwapInventory : AbstractGameEvent() {
@@ -15,30 +16,30 @@ data object SwapInventory : AbstractGameEvent() {
     override suspend fun callEvent() {
         eventSwap({ it.getInventoryData() }) { self, source, data ->
             data.applyTo(self)
-            Text.literal("你已应用 ").withColor(Color.LIGHT_GRAY.rgb)
-                .append(Text.literal(source.name.literalString).withColor(Color.WHITE.rgb)).append(" 的背包")
+            Component.literal("你已应用 ").withColor(Color.LIGHT_GRAY.rgb)
+                .append(Component.literal(source.name.string).withColor(Color.WHITE.rgb)).append(" 的背包")
                 .sendOverlay(self)
         }
-        SoundEvents.ENTITY_FOX_TELEPORT.broadcast(100F, 0F)
+        SoundEvents.FOX_TELEPORT.broadcast(100F, 0F)
     }
 
     data class InventoryData(
         val itemStacks: List<ItemStack>
     )
 
-    private fun ServerPlayerEntity.getInventoryData(): InventoryData {
-        val itemStacks = ArrayList<ItemStack>(inventory.size())
-        for (i in 0 until inventory.size()) {
-            itemStacks.add(inventory.getStack(i).copy())
+    private fun ServerPlayer.getInventoryData(): InventoryData {
+        val itemStacks = ArrayList<ItemStack>(inventory.containerSize)
+        for (i in 0 until inventory.containerSize) {
+            itemStacks.add(inventory.getItem(i).copy())
         }
 
         return InventoryData(itemStacks)
     }
 
-    private fun InventoryData.applyTo(player: ServerPlayerEntity) {
+    private fun InventoryData.applyTo(player: ServerPlayer) {
         for (i in itemStacks.indices) {
-            player.inventory.setStack(i, itemStacks[i])
+            player.inventory.setItem(i, itemStacks[i])
         }
-        player.inventory.updateItems()
+        player.syncInventory()
     }
 }
